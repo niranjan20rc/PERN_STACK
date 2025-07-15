@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api" }
-  ]
+  "builds": [{ "src": "api/*.js", "use": "@vercel/node" }],
+  "routes": [{ "src": "/api/remove-bg", "dest": "api/remove-bg.js" }]
 }
