@@ -7,8 +7,8 @@ import { removeBackground } from '@imgly/background-removal-node';
 const app = express();
 app.use(cors());
 
-// Store uploads in /tmp or uploads/
-const upload = multer({ dest: 'uploads/' });
+// Use /tmp directory for file uploads in Vercel
+const upload = multer({ dest: '/tmp' });
 
 app.post('/api/remove-bg', upload.single('file'), async (req, res) => {
   try {
