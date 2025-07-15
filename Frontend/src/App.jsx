@@ -1,108 +1,193 @@
-// App.js - React frontend for PERN Todo List
+import "./App.css"
+import React, { useState, useCallback } from 'react';
 
-import React, { useEffect, useState } from "react";
-import axios from "axios";
 
-const API_URL = "http://localhost:5000/todos"; // ✅ Update this if deploying backend
+const Nav=()=>{
+  return(<div>
+    <nav>AI Based BackGround Remover</nav>
+  </div>)
+}
+
 
 function App() {
-  const [description, setDescription] = useState("");
-  const [todos, setTodos] = useState([]);
+  const [file, setFile] = useState(null);
+  const [resultUrl, setResultUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const gridSize = 50; // px
 
-  // 🔄 Fetch todos from backend
-  const fetchTodos = async () => {
-    try {
-      const res = await axios.get(API_URL);
-      setTodos(res.data);
-    } catch (err) {
-      console.error("Error fetching todos:", err.message);
-    }
-  };
-
-  // ➕ Add a new todo
-  const addTodo = async () => {
-    if (!description.trim()) return;
-    try {
-      await axios.post(API_URL, { description });
-      setDescription("");
-      fetchTodos();
-    } catch (err) {
-      console.error("Error adding todo:", err.message);
-    }
-  };
-
-  // ❌ Delete a todo
-  const deleteTodo = async (id) => {
-    try {
-      await axios.delete(`${API_URL}/${id}`);
-      fetchTodos();
-    } catch (err) {
-      console.error("Error deleting todo:", err.message);
-    }
-  };
-
-  // ✏️ Update a todo (inline example)
-  const updateTodo = async (id, newDesc) => {
-    try {
-      await axios.put(`${API_URL}/${id}`, { description: newDesc });
-      fetchTodos();
-    } catch (err) {
-      console.error("Error updating todo:", err.message);
-    }
-  };
-
-  useEffect(() => {
-    fetchTodos();
+  const handleFile = useCallback(e => {
+    setFile(e.target.files[0]);
+    setResultUrl('');
+    setError('');
   }, []);
 
+  const handleUpload = useCallback(async () => {
+    if (!file) return;
+    setLoading(true);
+    setError('');
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const resp = await fetch('http://localhost:4000/api/remove-bg', {
+        method: 'POST',
+        body: fd,
+      });
+      if (!resp.ok) {
+        const { error } = await resp.json();
+        throw new Error(error || 'Upload failed');
+      }
+      const blob = await resp.blob();
+      setResultUrl(URL.createObjectURL(blob));
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  }, [file]);
+
+  const handleDownload = useCallback(() => {
+    if (!resultUrl) return;
+    const a = document.createElement('a');
+    a.href = resultUrl;
+    a.download = 'no-bg-image.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(resultUrl), 1000);
+  }, [resultUrl]);
+
+  const styles = {
+    wrapper: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '100vh',
+      padding: 20,
+      backgroundColor: '#f6f8fa',
+      fontFamily: 'Segoe UI, sans-serif',
+    },
+    container: {
+      
+      marginTop:"5rem",
+      width: "80%",
+      height: '80vh',
+      padding: 40,
+      borderRadius: 12,
+      backgroundColor: '#fff',
+      boxShadow: '0 8px 30px rgba(12, 12, 12, 0.02)',
+      textAlign: 'center',
+      position: 'relative',
+      overflowY: 'auto',
+      backgroundImage: [
+        `linear-gradient(to right, rgba(0, 0, 0, 0.10) 1px, transparent 1px)`,
+        `linear-gradient(to bottom, rgba(0,0,0,0.10) 1px, transparent 1px)`,
+      ].join(','),
+      backgroundSize: `${gridSize}px ${gridSize}px`,
+      backgroundPosition: `-1px -1px`,
+    },
+    title: { fontSize: 24, marginTop:10,marginBottom: 10, fontWeight: 600 },
+    subtitle: { fontSize: 16, color: '#666',marginTop:30, marginBottom: 20 },
+    input: {
+      
+      marginTop:"5rem",
+      textAlign: 'center',
+      width: '50%',
+      padding: '20px 10px',
+      fontSize: '15px',
+      border: '1.5px solid #d1d5db',
+      borderRadius: '12px',
+      marginBottom: '20px',
+      backgroundColor: '#fff',
+      boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+      transition: 'all 0.2s ease-in-out',
+      outline: 'none',
+    },
+    button: {
+      width: '50%',
+      padding: '12px',
+      fontSize: 16,
+      backgroundColor: '#007bff',
+      color: '#fff',
+      border: 'none',
+      borderRadius: 8,
+      transition: '0.3s ease',
+      '@media(max-width:500px)':{
+        width:"80%"
+      }
+    },
+    loader: {
+      margin: '20px auto',
+      border: '5px solid #eee',
+      borderTop: '5px solid #007bff',
+      borderRadius: '50%',
+      width: 36,
+      height: 36,
+      animation: 'spin 1s linear infinite',
+    },
+    error: { color: 'red', marginTop: 10 },
+    preview: { marginTop: 30 },
+    image: {
+      maxWidth: '100%',
+      borderRadius: 10,
+      marginBottom: 15,
+      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+    },
+    downloadButton: {
+      padding: '10px 20px',
+      backgroundColor:"crimson",
+      color: '#fff',
+      border: 'none',
+      borderRadius: 8,
+      fontSize: 15,
+      cursor: 'pointer',
+      transition: 'background 0.3s ease',
+    },
+  };
+
   return (
-    <div style={styles.container}>
-      <h1>PERN ToDo List ✅</h1>
+    <div style={styles.wrapper}>
+      <div style={styles.container}>
+        <p className='we'>We Make BackGround Ghost !!!</p>
+        <h3 style={styles.title}>Remove Background without any water mark</h3>
+        <p style={styles.subtitle}>Upload an image to remove its background.</p>
 
-      <div style={styles.inputBox}>
-        <input
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Add a task..."
-          style={styles.input}
-        />
-        <button onClick={addTodo} style={styles.addBtn}>Add</button>
-      </div>
+        <input type="file" accept="image/*" onChange={handleFile} style={styles.input} />
 
-      <ul style={styles.todoList}>
-        {todos.map((todo) => (
-          <li key={todo.todo_id} style={styles.todoItem}>
-            <input
-              defaultValue={todo.description}
-              onBlur={(e) => updateTodo(todo.todo_id, e.target.value)}
-              style={styles.todoText}
-            />
-            <button onClick={() => deleteTodo(todo.todo_id)} style={styles.delBtn}>
-              ❌
+        <button
+          onClick={handleUpload}
+          disabled={!file || loading}
+          style={{
+            ...styles.button,
+            opacity: !file || loading ? 0.6 : 1,
+            cursor: !file || loading ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {loading ? 'Processing...' : 'Remove Background'}
+        </button>
+
+        {loading && <div style={styles.loader} />}
+        {error && <p style={styles.error}>{error}</p>}
+
+        {resultUrl && !loading && (
+          <div style={styles.preview}>
+            <img src={resultUrl} alt="Result" style={styles.image} />
+            <button onClick={handleDownload} style={styles.downloadButton}>
+              Download PNG
             </button>
-          </li>
-        ))}
-      </ul>
+          </div>
+        )}
+
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
     </div>
   );
 }
-
-// 💅 Simple inline styling
-const styles = {
-  container: { padding: 30, maxWidth: 600, margin: "auto", fontFamily: "sans-serif" },
-  inputBox: { display: "flex", marginBottom: 20 },
-  input: { flex: 1, padding: 10, fontSize: 16 },
-  addBtn: { padding: "10px 20px", marginLeft: 10, cursor: "pointer" },
-  todoList: { listStyle: "none", padding: 0 },
-  todoItem: {
-    display: "flex",
-    alignItems: "center",
-    marginBottom: 10,
-    borderBottom: "1px solid #ccc",
-    paddingBottom: 5,
-  },
-  todoText: { flex: 1, padding: 8, fontSize: 16 },
-  delBtn: { marginLeft: 10, cursor: "pointer", background: "none", border: "none", fontSize: 20 },
-};
 
 export default App;
