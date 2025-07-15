@@ -49,7 +49,7 @@ app.post('/todos', async (req, res) => {
 
 app.get('/todos', async (_req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM todos ORDER BY todo_id ASCE');
+    const result = await pool.query('SELECT * FROM todos ORDER BY todo_id ASC');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
